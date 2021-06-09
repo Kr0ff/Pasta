@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+'''
+TODO:
+1. Implement somehow, good to look for usernames, passwords, emails, etc. (Anything of value)
+2. Get the most recent 200 pastes from pastebin.com/archive
+3. Threading
+'''
+
 try:
     import requests
     import argparse
@@ -7,13 +14,12 @@ try:
     import time
     import string
     import random
-    import urllib3
     import os
     import re
+    
 
-    from bs4 import BeautifulSoup
     from colored import fg, attr
-
+    from bs4 import BeautifulSoup
 except ImportError as i:
     print(f"{attr(1)}{fg(1)}[-]{attr(0)} Some libraries are missing !")
     print(f"{attr(1)}{fg(1)}[-]{attr(0)} Python error: {i}")
@@ -33,6 +39,7 @@ def ascii():
     """
     print(ascii_art)
 
+# This is likely not needed...
 class TimeMeasure:
 
     def time_estimate(arg=''):
@@ -45,6 +52,17 @@ class TimeMeasure:
         if arg == "end":
             return end
 
+'''
+Class to search PasteBin with randomly generated
+8 character string. 
+
+The class can generate number of strings:
+ - (Search.randomize_alpha())
+
+The class can send a request for each generated
+string:
+ - (Search.search_request())
+'''
 class Search:
     
     def __init__(self, str_range):
@@ -52,8 +70,13 @@ class Search:
 
     # LA = Length of Alphabet 
     # Essentially what string will be send to PasteBin
-    def randomize_alpha(LA=8, str_range=0):
+    def randomize_alpha(LA=8, str_range=''):
+
         alpha = string.ascii_letters + string.digits
+
+        if str_range == 0:
+            print(f"{attr(1)}{fg(1)}[-]{attr(0)} Number of strings can't be - {fg(13)}0{attr(0)}")
+            sys.exit(1)
 
         # Check if strings.txt exists where random strings will be inserted
         if not os.path.isfile("./strings.txt") and not os.path.exists("./strings.txt"):
@@ -70,7 +93,6 @@ class Search:
         print(f"{attr(1)}{fg(2)}[+]{attr(0)} Writing {str_range} strings in 'strings.txt' !")        
         
         with open("./strings.txt", "w") as strings_file:
-            
             for strings in range(str_range):
                 strings = ''.join(random.sample(alpha, LA))
                 strings_file.write(strings)
@@ -80,10 +102,11 @@ class Search:
             strings_file.close()
         
     def search_request(str_range=0):
-        begin = TimeMeasure.time_estimate("start")
+
+        # begin = TimeMeasure.time_estimate("start")
         
-        #if str_range != 0:
-        Search.randomize_alpha(8, str_range)
+        if str_range != 0:
+            Search.randomize_alpha(8, str_range)
 
         # Safari cuz why not look fancy :P
         user_agent = {
@@ -126,14 +149,64 @@ class Search:
                     sys.exit(0)
         
         strings_file.close()
-        print(f"Time taken to complete: {TimeMeasure.time_estimate('end') - begin} seconds")
+        # print(f"Time taken to complete: {TimeMeasure.time_estimate('end') - begin} seconds")
 
+'''
+The class is able to get the most recent archive from PasteBin.
+It is able to view the contents of a specific PasteBin,
+for example: $ pasta.py -c KHK2ndnC
+ - CheckBin.get_recent_archive()
+
+The class is able to check the contents of a user-provided ID.
+ - CheckBin.view_pastebin(string) // Where string == KHK2ndnC
+'''
 class CheckBin:
+
+    def get_recent_archive():
+
+        # Set some variables
+        HREF_REGEX = r"<a href=\"\/(.*?)\">(.*?)<\/a>"
+        user_agent = {
+            "User-Agent" : "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1 Safari/605.1.15"
+        }
+
+        URL = requests.get('https://pastebin.com/archive', verify=False, headers=user_agent)
+        soup = BeautifulSoup(URL.content, 'html.parser')
+        pastes = soup.find_all('a')
+
+        # prints the necessary values using the HREF_REGEX above
+        pastes_findall = re.findall(HREF_REGEX, str(pastes))
+
+        print(f"{attr(1)}{fg(2)}[+]{attr(0)} Grabbing most recent PasteBin archive !\r\n")
+
+        # Will grab only the title and id of each PasteBin in the recent archive
+        try:
+            # id = PasteBin ID - KHK2ndnC
+            # t = PasteBin Title associated to the ID
+            for id, t in pastes_findall:
+
+                output = f"{t} -> {id}"
+                get_valid = r'(.*?) \-\> ([A-Za-z\d+]{8})'
+                final = re.search(get_valid, output)
+                
+                # Will check if the object type is NoneType
+                # and will skip that object
+                if final is None:
+                    pass
+
+                else:
+                    final = final.group(0)
+                    print(f"{fg(186)}{attr(1)}{final}{attr(0)}")
+
+        # Again, if there's an IndexError it's skipped
+        except IndexError:
+            pass
     
     def view_pastebin(string):
         
         print(f"{attr(1)}{fg(2)}[+]{attr(0)} Checking the contents of {fg(12)}{string}{attr(0)}")
 
+        # Simple check if the user-provided string is 8 chars long 
         if string == "" or len(string) < 8 or len(string) > 8:
             print(f"{attr(1)}{fg(3)}[!]{attr(0)} An 8 character string has to be provided.")
             print(f"{attr(1)}{fg(3)}[!]{attr(0)} Example: {sys.argv[0]} -c \"KHK2ndnC\"")
@@ -153,6 +226,7 @@ class CheckBin:
                 verify=False
                 )
 
+            # If the HTTP response is 200, write the contents of the PasteBin
             if search.status_code == 200:
                 print(f"{attr(1)}{fg(2)}[+]{attr(0)} Saving the contents of {fg(12)}{string}{attr(0)} to {fg(3)}output/{string}.pastebin.txt{attr(0)}")
                 if not os.path.isdir("output") and not os.path.exists("output"):
@@ -161,16 +235,17 @@ class CheckBin:
                     
                     try:
                         os.mkdir("output")
-                    except Exception as e:
-                        print(f"{attr(1)}{fg(3)}[!]{attr(0)} Exception when making directory !")
-                        print(f"{e}")
+                    except:
+                        raise Exception()
+                        # print(f"{attr(1)}{fg(3)}[!]{attr(0)} Exception when making directory !")
+                        # print(f"{e}")
 
                 
                 with open(f"output/{string}.pastebin.txt", "w") as pastebin_entry:
                     pastebin_entry.write(search.text)
                     pastebin_entry.close()
 
-                print(f"{attr(1)}{fg(2)}[+]{attr(0)} Showing the content of {fg(12)}{string}{attr(0)} PasteBin entry !")
+                print(f"{attr(1)}{fg(2)}[+]{attr(0)} Showing the contents of {fg(12)}{string}{attr(0)} PasteBin entry !")
                 print(f"{attr(1)}{fg(2)}[+]{attr(0)} Content:")
                 print(50 * "-")
                 print(search.text)
@@ -188,22 +263,101 @@ class CheckBin:
             print(f"{attr(1)}{fg(1)}[-]{attr(0)} Something is not right ! Try again !")
             sys.exit(1)
 
-# !! Implement somehow, good to look for usernames, passwords, emails, etc. (Anything of value) !!
-# Get the most recent 200 pastes from pastebin.com/archive
-def get_recent():
-    
-    URL = requests.get('https://pastebin.com/archive')
-    href_regex = r"<a href=\"\/(.+?)\">(.+?)<\/a><\/td>"
-    
-    pastes = re.findall(href_regex, str(URL.text))
+'''
+The class can check the contents of the PasteBins
+ - CheckAllBin.contents_of_pastes(id) // Where id == ID of PasteBin
 
-    recent_pastes = []
+The class can check for sensitive data such as emails, usernames & IP addresses
+ - CheckAllBin.search_sensitive_data() 
+'''
+class CheckAllBin:
 
-    for paste_id, paste_title in pastes:
-        #recent_pastes.append(paste_id)
-        return paste_title, paste_id
+    def contents_of_pastes(id):
 
-print(get_recent())
+        print(f"{attr(1)}{fg(2)}[+]{attr(0)} Grabbing most recent PasteBin archive !\r\n")
+
+        ARCHIVE_URL = "https://pastebin.com/archive"
+        RAW_URL = "https://pastebin.com/raw/"
+        
+        HREF_REGEX = r"<a href=\"\/(.*?)\">(.*?)<\/a>"
+        get_valid_id = r'\(\'([A-Za-z\d+]{8})\''
+        user_agent = {
+            "User-Agent" : "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1 Safari/605.1.15"
+        }
+
+        URL_ARCHIVE = requests.get(ARCHIVE_URL, 
+                                    verify=False, 
+                                    headers=user_agent)
+
+        soup = BeautifulSoup(URL_ARCHIVE.content, 'html.parser')
+        pastes = soup.find_all('a')
+
+        # Prints the necessary values using the regex above
+        pastes_findall = re.findall(HREF_REGEX, str(pastes)) 
+        pastes_id = re.findall(get_valid_id, str(pastes_findall))
+
+        # A for loop to check the contents of each ID.
+        # Directory 'pastebins' will be created
+        if os.path.exists('output/pastebins') and os.path.isdir('output/pastebins'):
+            print(f"{attr(1)}{fg(2)}[+]{attr(0)} Directory {fg(13)}'pastebins'{attr(0)} exists !")
+
+        else:
+            print(f"{attr(1)}{fg(1)}[-]{attr(0)} Directory {fg(13)}'pastebins'{attr(0)} doesn't exist, making it !")
+            try:
+                os.mkdir('output/pastebins')
+            except NotADirectoryError or FileExistsError:
+                raise Exception(f"\n{attr(1)}{fg(3)}[!]{attr(0)} Directory creation of {fg(13)}'pastebins'{attr(0)} failed !")
+
+        for id in pastes_id:
+            URL_RAW = requests.get(f"{RAW_URL}{id}", 
+                                    verify=False,
+                                    headers=user_agent)
+
+            try:
+                with open(f"output/pastebins/Pastebin-{id}.txt", "w") as pastebin:
+                    print(f"{attr(1)}{fg(2)}[+]{attr(0)} Saving the contents of {fg(12)}{id}{attr(0)} to {fg(3)}output/pastebins/Pastebin-{id}.txt{attr(0)}")
+                    pastebin.write(URL_RAW.text)
+                    pastebin.close()
+            except:
+                raise Exception
+        
+    def search_sensitive_data():
+        
+        # Some regex variables
+        USERNAME_REGEX = r"^[a-z0-9_-]{3,15}$"
+        EMAIL_REGEX = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
+        IP_REGEX = r"(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}"
+
+        try:
+            for file in os.listdir("./output/pastebins/"):
+                 # For each file check if it's a directory instead of file
+                 # If yes, exit
+                if os.path.isdir(f"./output/pastebins/{file}"):
+                    print(f"[!] {file} is a directory not a file !")
+                    sys.exit(0)
+
+                # Read each file and search for emails, usernames, IP addresses
+                with open(f"./output/pastebins/{file}", "r") as pastebin:
+                    id = pastebin.readlines()
+
+                    email_search = re.search(EMAIL_REGEX, str(id))
+                    if email_search:
+                        print(f"{attr(1)}{fg(2)}[+]{attr(0)} Found emails in {fg(3)}output/pastebins/{file}{attr(0)}")
+                        print(f"{email_search.group(0)}\r\n")
+                    
+                    ip_search = re.search(IP_REGEX, str(id))
+                    if ip_search:
+                        print(f"{attr(1)}{fg(2)}[+]{attr(0)} Found IP addresses in {fg(3)}output/pastebins/{file}{attr(0)}")
+                        print(f"{ip_search.group(0)}\r\n")
+
+                    username_search = re.search(USERNAME_REGEX, str(id))
+                    if username_search:
+                        print(f"{attr(1)}{fg(2)}[+]{attr(0)} Found IP addresses in {fg(3)}output/pastebins/{file}{attr(0)}")
+                        print(f"{username_search.group(0)}\r\n")
+                    
+                    pastebin.close()
+        except:
+            raise Exception()
 
 #Initilize parser for arguments
 def argparser():
@@ -215,7 +369,7 @@ def argparser():
             required=False
             )
     
-    parser.add_argument("-rs",
+    parser.add_argument("-r",
             "--range_str", 
             help="How many strings to generate", 
             type=int, 
@@ -229,15 +383,39 @@ def argparser():
             type=str, 
             required=False
             )
+
+    parser.add_argument("-ga", 
+            "--get_archive", 
+            help="Get most recent PasteBin archive", 
+            required=False,
+            action='store_true'
+            )
             
-    args = parser.parse_args(args=None if sys.argv[1:] else ['-h']) #Show help menu if no arguments provided
-    #args = parser.parse_args()
+    parser.add_argument("-sc", 
+            "--scrape", 
+            help="Scrape the most recent archive and save each Pastebin", 
+            required=False,
+            action='store_true'
+            )
+    
+    parser.add_argument("-ss", 
+            "--sensitive", 
+            help="Search for sensitive info from downloaded Pastebins", 
+            required=False,
+            action='store_true'
+            )
+    
+    #Show help menu if no arguments provided
+    args = parser.parse_args(args=None if sys.argv[1:] else ['-h'])
     
     if args.search:
         if args.range_str:
             str_range = args.range_str
+            Search.search_request(str_range)
         
-        Search.search_request(str_range)
+        else:
+            str_range = 0
+            Search.search_request(str_range)
 
     if args.range_str and not args.search:
         str_range = args.range_str
@@ -246,12 +424,16 @@ def argparser():
     if args.check:
         string = args.check
         CheckBin.view_pastebin(string)
+    
+    if args.get_archive:
+        CheckBin.get_recent_archive()
+
+    if args.scrape:
+        CheckAllBin.contents_of_pastes(id)
+
+    if args.sensitive:
+        CheckAllBin.search_sensitive_data()
 
 if __name__ == "__main__":
-    try:
-        ascii()
-        argparser()
-
-    except Exception as e:
-        print(f"{attr(1)}{fg(1)}[-]{attr(0)} An exception arose !")
-        print(f"{attr(1)}{fg(1)}[-]{attr(0)} Exception: {e}")
+    ascii()
+    argparser()
