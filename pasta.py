@@ -336,24 +336,27 @@ class CheckAllBin:
                     print(f"[!] {file} is a directory not a file !")
                     sys.exit(0)
 
-                # Read each file and search for emails, usernames, IP addresses
+                    # Read each file and search for emails, usernames, IP addresses
                 with open(f"./output/pastebins/{file}", "r") as pastebin:
-                    id = pastebin.readlines()
-
-                    email_search = re.search(EMAIL_REGEX, str(id))
-                    if email_search:
-                        print(f"{attr(1)}{fg(2)}[+]{attr(0)} Found emails in {fg(3)}output/pastebins/{file}{attr(0)}")
-                        print(f"{email_search.group(0)}\r\n")
+                    # print(pastebin.read())
+                    # id = pastebin.readlines()
                     
-                    ip_search = re.search(IP_REGEX, str(id))
-                    if ip_search:
-                        print(f"{attr(1)}{fg(2)}[+]{attr(0)} Found IP addresses in {fg(3)}output/pastebins/{file}{attr(0)}")
-                        print(f"{ip_search.group(0)}\r\n")
+                    for line in pastebin.readlines():
 
-                    username_search = re.search(USERNAME_REGEX, str(id))
-                    if username_search:
-                        print(f"{attr(1)}{fg(2)}[+]{attr(0)} Found IP addresses in {fg(3)}output/pastebins/{file}{attr(0)}")
-                        print(f"{username_search.group(0)}\r\n")
+                        email_search = re.search(EMAIL_REGEX, str(line))
+                        if email_search:
+                            print(f"{attr(1)}{fg(2)}[+]{attr(0)} Found emails in {fg(3)}output/pastebins/{file}{attr(0)}")
+                            print(f"{email_search.group(0)}\r\n")
+                        
+                        ip_search = re.search(IP_REGEX, str(line))
+                        if ip_search:
+                            print(f"{attr(1)}{fg(2)}[+]{attr(0)} Found IP addresses in {fg(3)}output/pastebins/{file}{attr(0)}")
+                            print(f"{ip_search.group(0)}\r\n")
+
+                        username_search = re.search(USERNAME_REGEX, str(line))
+                        if username_search:
+                            print(f"{attr(1)}{fg(2)}[+]{attr(0)} Found username in {fg(3)}output/pastebins/{file}{attr(0)}")
+                            print(f"{username_search.group(0)}\r\n")
                     
                     pastebin.close()
         except:
