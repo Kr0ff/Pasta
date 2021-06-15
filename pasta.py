@@ -2,10 +2,15 @@
 
 '''
 TODO:
-1. Implement somehow, good to look for usernames, passwords, emails, etc. (Anything of value)
-2. Get the most recent 200 pastes from pastebin.com/archive
-3. Threading
+1. Implement somehow, good to look for usernames, passwords, emails, etc. (Anything of value) - DONE [v]
+2. Get the most recent 200 pastes from pastebin.com/archive - DONE [v] 
+3. Threading - DONE [x]
+4. Be able to get the contents of a user's page - DONE [v]
 '''
+
+from ctypes import sizeof
+import itertools
+
 
 try:
     import requests
@@ -17,7 +22,6 @@ try:
     import os
     import re
     
-
     from colored import fg, attr
     from bs4 import BeautifulSoup
 except ImportError as i:
@@ -35,7 +39,7 @@ def ascii():
 \ \  _-/\ \  __ \\\ \___  \\\/_/\ \/\ \  __ \  
  \ \_\   \ \_\ \_\\\/\_____\  \ \_\ \ \_\ \_\ 
   \/_/    \/_/\/_/ \/_____/   \/_/  \/_/\/_/{attr(0)}      
-                                       {fg(106)}v0.1{attr(0)}   
+                                       {fg(106)}v0.2{attr(0)}   
     """
     print(ascii_art)
 
@@ -170,8 +174,8 @@ class CheckBin:
             "User-Agent" : "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1 Safari/605.1.15"
         }
 
-        URL = requests.get('https://pastebin.com/archive', verify=False, headers=user_agent)
-        soup = BeautifulSoup(URL.content, 'html.parser')
+        ARCHIVE_URL = requests.get('https://pastebin.com/archive', verify=False, headers=user_agent)
+        soup = BeautifulSoup(ARCHIVE_URL.content, 'html.parser')
         pastes = soup.find_all('a')
 
         # prints the necessary values using the HREF_REGEX above
@@ -215,13 +219,13 @@ class CheckBin:
         elif string != "" and len(string) == 8:
             
             r = requests.Session()
-            URL = f"https://pastebin.com/raw/{string}"
+            RAW_URL = f"https://pastebin.com/raw/{string}"
             user_agent = {
             "User-Agent" : "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1 Safari/605.1.15"
             }
 
             search = r.get(
-                URL, 
+                RAW_URL, 
                 headers=user_agent,
                 verify=False
                 )
@@ -299,14 +303,14 @@ class CheckAllBin:
         # A for loop to check the contents of each ID.
         # Directory 'pastebins' will be created
         if os.path.exists('output/pastebins') and os.path.isdir('output/pastebins'):
-            print(f"{attr(1)}{fg(2)}[+]{attr(0)} Directory {fg(13)}'pastebins'{attr(0)} exists !")
+            print(f"{attr(1)}{fg(2)}[+]{attr(0)} Directory {fg(13)}pastebins{attr(0)} exists !")
 
         else:
-            print(f"{attr(1)}{fg(1)}[-]{attr(0)} Directory {fg(13)}'pastebins'{attr(0)} doesn't exist, making it !")
+            print(f"{attr(1)}{fg(1)}[-]{attr(0)} Directory {fg(13)}pastebins{attr(0)} doesn't exist, making it !")
             try:
                 os.mkdir('output/pastebins')
             except NotADirectoryError or FileExistsError:
-                raise Exception(f"\n{attr(1)}{fg(3)}[!]{attr(0)} Directory creation of {fg(13)}'pastebins'{attr(0)} failed !")
+                raise Exception(f"\n{attr(1)}{fg(3)}[!]{attr(0)} Directory creation of {fg(13)}pastebins{attr(0)} failed !")
 
         for id in pastes_id:
             URL_RAW = requests.get(f"{RAW_URL}{id}", 
@@ -336,11 +340,10 @@ class CheckAllBin:
                     print(f"[!] {file} is a directory not a file !")
                     sys.exit(0)
 
-                    # Read each file and search for emails, usernames, IP addresses
+                # Read each file and search for emails, usernames, IP addresses
                 with open(f"./output/pastebins/{file}", "r") as pastebin:
-                    # print(pastebin.read())
-                    # id = pastebin.readlines()
                     
+                    # For each of the read files, look for the matching regex
                     for line in pastebin.readlines():
 
                         email_search = re.search(EMAIL_REGEX, str(line))
@@ -361,6 +364,97 @@ class CheckAllBin:
                     pastebin.close()
         except:
             raise Exception()
+
+'''
+The class is capable of going through all PasteBins of
+a user and grabbing all PasteBins posted by that person
+ - search_person()
+'''
+# Users to use for debugging:
+# - 7d2dlauncher (short list)
+# - desislava_topuzakova (long list)
+class Pastebiner:
+
+    def pastebiner(u, p):
+
+        RAW_URL = "https://pastebin.com/raw/"
+        USER_URL = "https://pastebin.com/u/"
+
+        HREF_REGEX = r"<a href=\"\/(.*?)\">(.*?)<\/a>"
+        get_valid_id = r'\(\'([A-Za-z\d+]{8})\''
+
+        r = requests.Session()
+        user_agent = {
+            "User-Agent" : "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1 Safari/605.1.15"
+        }
+
+        request_user = r.get(
+            USER_URL+u,
+            headers=user_agent,
+            verify=False
+        )
+
+        # Is the user parameter empty ?
+        if not u:
+            print(f"{attr(1)}{fg(1)}[-]{attr(0)} User cannot be empty !")
+
+        # Directory 'users' will be created if not existing
+        if os.path.exists(f'output/users') and os.path.isdir(f'output/users'):
+            print(f"{attr(1)}{fg(2)}[+]{attr(0)} Directory {fg(13)}users{attr(0)} exists !")
+
+        else:
+            print(f"{attr(1)}{fg(1)}[-]{attr(0)} Directory {fg(13)}users{attr(0)} doesn't exist, making it !")
+            try:
+                os.mkdir('output/users')
+            except NotADirectoryError or FileExistsError:
+                raise Exception(f"\n{attr(1)}{fg(3)}[!]{attr(0)} Directory creation of {fg(13)}users{attr(0)} failed !")
+
+        # Check if user exists in PasteBin
+        if request_user.status_code == 404:
+            print(f"{attr(1)}{fg(1)}[-]{attr(0)} User {fg(134)}{attr(1)}{u}{attr(0)} doesn't exist")
+            sys.exit(0)
+
+        # When users is present make a dir with their name
+        if request_user.status_code == 200:
+            if os.path.exists(f'output/users/{u}') and os.path.isdir(f'output/users/{u}'):
+                print(f"{attr(1)}{fg(2)}[+]{attr(0)} Directory {fg(13)}users{attr(0)} exists !")
+            
+            else:
+                print(f"{attr(1)}{fg(1)}[-]{attr(0)} Directory of user {fg(134)}{u}{attr(0)} doesn't exist, making it !")
+                try:
+                    os.mkdir(f'output/users/{u}')
+                except NotADirectoryError or FileExistsError:
+                    raise Exception(f"\n{attr(1)}{fg(3)}[!]{attr(0)} Directory creation of user {fg(134)}{u}{attr(0)} failed !")
+
+        print(f"{attr(1)}{fg(2)}[+]{attr(0)} Requesting page {fg(44)}{attr(1)}{p}{attr(0)}")
+        try:
+            get_page = r.get(
+                f"{USER_URL}{u}/{p}",
+                headers=user_agent,
+                verify=False
+            )
+
+            soup = BeautifulSoup(get_page.content, 'html.parser')
+            pastes = soup.find_all('a')
+
+            # Prints the necessary values using the regex above
+            pastes_findall = re.findall(HREF_REGEX, str(pastes)) 
+            pastes_id = re.findall(get_valid_id, str(pastes_findall))
+
+            for id in pastes_id:
+                URL_RAW = requests.get(f"{RAW_URL}{id}", 
+                                    verify=False,
+                                    headers=user_agent)
+                try:
+                    with open(f"output/users/{u}/Pastebin-{id}.txt", "w") as pastebin:
+                        print(f"{attr(1)}{fg(2)}[+]{attr(0)} Saving the contents of {fg(12)}{id}{attr(0)} to {fg(3)}output/users/{fg(134)}{u}{attr(0)}{fg(3)}/Pastebin-{id}.txt{attr(0)}")
+                        pastebin.write(URL_RAW.text)
+                        pastebin.close()
+                except:
+                    raise Exception()
+
+        except Exception as e:
+            print(e)
 
 #Initilize parser for arguments
 def argparser():
@@ -408,6 +502,20 @@ def argparser():
             action='store_true'
             )
     
+    parser.add_argument("-u", 
+            "--userbin", 
+            help="Retrieve the PasteBin posts of a user", 
+            required=False,
+            type=str
+            )
+    
+    parser.add_argument("-p", 
+            "--page", 
+            help="Page number of user's PasteBins", 
+            required=False,
+            type=str
+            )
+    
     #Show help menu if no arguments provided
     args = parser.parse_args(args=None if sys.argv[1:] else ['-h'])
     
@@ -436,6 +544,15 @@ def argparser():
 
     if args.sensitive:
         CheckAllBin.search_sensitive_data()
+    
+    if args.userbin and not args.page:
+        u = args.userbin
+        p = 0
+        Pastebiner.pastebiner(u, p)
+    else:
+        u = args.userbin
+        p = args.page
+        Pastebiner.pastebiner(u, p)
 
 if __name__ == "__main__":
     ascii()
