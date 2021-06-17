@@ -8,10 +8,6 @@ TODO:
 4. Be able to get the contents of a user's page - DONE [v]
 '''
 
-from ctypes import sizeof
-import itertools
-
-
 try:
     import requests
     import argparse
@@ -325,45 +321,75 @@ class CheckAllBin:
             except:
                 raise Exception
         
-    def search_sensitive_data():
+    def search_sensitive_data(f):
         
         # Some regex variables
         USERNAME_REGEX = r"^[a-z0-9_-]{3,15}$"
         EMAIL_REGEX = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
         IP_REGEX = r"(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}"
 
-        try:
-            for file in os.listdir("./output/pastebins/"):
-                 # For each file check if it's a directory instead of file
-                 # If yes, exit
-                if os.path.isdir(f"./output/pastebins/{file}"):
-                    print(f"[!] {file} is a directory not a file !")
-                    sys.exit(0)
+        if not f:
+            try:
+                for file in os.listdir("./output/pastebins/"):
+                    # For each file check if it's a directory instead of file
+                    # If yes, exit
+                    if os.path.isdir(f"./output/pastebins/{file}"):
+                        print(f"[!] {file} is a directory not a file !")
+                        sys.exit(0)
 
-                # Read each file and search for emails, usernames, IP addresses
-                with open(f"./output/pastebins/{file}", "r") as pastebin:
-                    
-                    # For each of the read files, look for the matching regex
-                    for line in pastebin.readlines():
-
-                        email_search = re.search(EMAIL_REGEX, str(line))
-                        if email_search:
-                            print(f"{attr(1)}{fg(2)}[+]{attr(0)} Found emails in {fg(3)}output/pastebins/{file}{attr(0)}")
-                            print(f"{email_search.group(0)}\r\n")
+                    # Read each file and search for emails, usernames, IP addresses
+                    with open(f"./output/pastebins/{file}", "r") as pastebin:
                         
-                        ip_search = re.search(IP_REGEX, str(line))
-                        if ip_search:
-                            print(f"{attr(1)}{fg(2)}[+]{attr(0)} Found IP addresses in {fg(3)}output/pastebins/{file}{attr(0)}")
-                            print(f"{ip_search.group(0)}\r\n")
+                        # For each of the read files, look for the matching regex
+                        for line in pastebin.readlines():
 
-                        username_search = re.search(USERNAME_REGEX, str(line))
-                        if username_search:
-                            print(f"{attr(1)}{fg(2)}[+]{attr(0)} Found username in {fg(3)}output/pastebins/{file}{attr(0)}")
-                            print(f"{username_search.group(0)}\r\n")
+                            email_search = re.search(EMAIL_REGEX, str(line))
+                            if email_search:
+                                print(f"{attr(1)}{fg(2)}[+]{attr(0)} Found emails in {fg(3)}output/pastebins/{file}{attr(0)}")
+                                print(f"{email_search.group(0)}\r\n")
+                            
+                            ip_search = re.search(IP_REGEX, str(line))
+                            if ip_search:
+                                print(f"{attr(1)}{fg(2)}[+]{attr(0)} Found IP addresses in {fg(3)}output/pastebins/{file}{attr(0)}")
+                                print(f"{ip_search.group(0)}\r\n")
+
+                            username_search = re.search(USERNAME_REGEX, str(line))
+                            if username_search:
+                                print(f"{attr(1)}{fg(2)}[+]{attr(0)} Found username in {fg(3)}output/pastebins/{file}{attr(0)}")
+                                print(f"{username_search.group(0)}\r\n")
+                        
+                        pastebin.close()
+            except:
+                raise Exception()
+        # Choose a file in ./output/ and check for sensitive info
+        # using regex above
+        else:
+            if os.path.isdir(f"./output/{f}"):
+                print(f"[!] {f} is a directory not a file !")
+                sys.exit(0)
+
+            with open(f"./output/{f}", "r") as file_to_read:
+
+                print(f"{attr(1)}{fg(2)}[+]{attr(0)} Searching for sensitive info in {fg(3)}output/{f}{attr(0)}")
+                file = file_to_read.readlines()
+
+                for line in file:
+                    email_search = re.search(EMAIL_REGEX, str(line))
+                    if email_search:
+                        print(f"{attr(1)}{fg(2)}[+]{attr(0)} Found emails in {fg(3)}output/{f}{attr(0)}")
+                        print(f"{email_search.group(0)}\r\n")
                     
-                    pastebin.close()
-        except:
-            raise Exception()
+                    ip_search = re.search(IP_REGEX, str(line))
+                    if ip_search:
+                        print(f"{attr(1)}{fg(2)}[+]{attr(0)} Found IP addresses in {fg(3)}output/{f}{attr(0)}")
+                        print(f"{ip_search.group(0)}\r\n")
+
+                    username_search = re.search(USERNAME_REGEX, str(line))
+                    if username_search:
+                        print(f"{attr(1)}{fg(2)}[+]{attr(0)} Found username in {fg(3)}output/{f}{attr(0)}")
+                        print(f"{username_search.group(0)}\r\n")
+
+                file_to_read.close()
 
 '''
 The class is capable of going through all PasteBins of
@@ -414,10 +440,10 @@ class Pastebiner:
             print(f"{attr(1)}{fg(1)}[-]{attr(0)} User {fg(134)}{attr(1)}{u}{attr(0)} doesn't exist")
             sys.exit(0)
 
-        # When users is present make a dir with their name
+        # When user is present make a dir with their name
         if request_user.status_code == 200:
             if os.path.exists(f'output/users/{u}') and os.path.isdir(f'output/users/{u}'):
-                print(f"{attr(1)}{fg(2)}[+]{attr(0)} Directory {fg(13)}users{attr(0)} exists !")
+                print(f"{attr(1)}{fg(2)}[+]{attr(0)} Directory of user {fg(13)}{u}{attr(0)} exists !")
             
             else:
                 print(f"{attr(1)}{fg(1)}[-]{attr(0)} Directory of user {fg(134)}{u}{attr(0)} doesn't exist, making it !")
@@ -458,6 +484,7 @@ class Pastebiner:
 
 #Initilize parser for arguments
 def argparser():
+
     parser = argparse.ArgumentParser(description='Pasta - A PasteBin Scraper')
     parser.add_argument("-s", 
             "--search", 
@@ -515,7 +542,14 @@ def argparser():
             required=False,
             type=str
             )
-    
+
+    parser.add_argument("-f", 
+            "--file", 
+            help="Search PasteBin with a set of strings",  
+            required=False,
+            type=str
+            )
+
     #Show help menu if no arguments provided
     args = parser.parse_args(args=None if sys.argv[1:] else ['-h'])
     
@@ -542,14 +576,19 @@ def argparser():
     if args.scrape:
         CheckAllBin.contents_of_pastes(id)
 
-    if args.sensitive:
-        CheckAllBin.search_sensitive_data()
+    # These go together
+    if args.sensitive and not args.file:
+        f = None
+        CheckAllBin.search_sensitive_data(f)
+    if args.sensitive and args.file:
+        CheckAllBin.search_sensitive_data(args.file)
     
+    # These go together
     if args.userbin and not args.page:
         u = args.userbin
         p = 0
         Pastebiner.pastebiner(u, p)
-    else:
+    if args.userbin and args.page:
         u = args.userbin
         p = args.page
         Pastebiner.pastebiner(u, p)
