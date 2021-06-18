@@ -91,15 +91,17 @@ class Search:
             print(f"{attr(1)}{fg(2)}[+]{attr(0)} File 'strings.txt' exists !")
 
         print(f"{attr(1)}{fg(2)}[+]{attr(0)} Writing {str_range} strings in 'strings.txt' !")        
+        try:
+            with open("./strings.txt", "w") as strings_file:
+                for strings in range(str_range):
+                    strings = ''.join(random.sample(alpha, LA))
+                    strings_file.write(strings)
+                    # Just need to apend a newline between each string
+                    strings_file.write('\n')
         
-        with open("./strings.txt", "w") as strings_file:
-            for strings in range(str_range):
-                strings = ''.join(random.sample(alpha, LA))
-                strings_file.write(strings)
-                # Just need to apend a newline between each string
-                strings_file.write('\n')
-    
-            strings_file.close()
+                strings_file.close()
+        except OSError:
+            raise Exception(f"{attr(1)}{fg(1)}[-]{attr(0)} Cannot read/open {fg(134)}strings.txt{attr(0)} !")
         
     def search_request(str_range=0):
 
@@ -116,40 +118,43 @@ class Search:
         # Initiallise GET request
         r = requests.Session()
 
+        print(f"{attr(1)}{fg(2)}[+]{attr(0)} Requesting the following IDs\r\n")
         # Check each string in the strings.txt file
-        with open("./strings.txt", "r") as strings_file:
-            for string in strings_file:
-                
-                s = string.strip()
-                URL = f"https://pastebin.com/{s}"
-                
-                try:
-                    # Perform GET
-                    search = r.get(
-                        URL, 
-                        headers=user_agent,
-                        verify=False
-                        )
+        try:
+            with open("./strings.txt", "r") as strings_file:
+                for string in strings_file:
                     
-                    # Find out what's the response code
-                    if search.status_code == 404:
-                        print(f"{attr(1)}{fg(3)}[!]{attr(0)} Response {fg(1)}404{attr(0)} for - {fg(1)}{s}{attr(0)}")
-
-                    elif search.status_code == 200:
-                        URL = f"https://pastebin.com/raw/{s}"
-                        print(f"{attr(1)}{fg(2)}[+]{attr(0)} Response {fg(2)}200{attr(0)} for - {fg(6)}{s}{attr(0)}")
-                        print(f"- URL: {URL}")
+                    s = string.strip()
+                    URL = f"https://pastebin.com/{s}"
                     
-                    else:
-                        print(f"{attr(1)}{fg(1)}[-]{attr(0)} Response is different that 404 or 200 for - {fg(13)}{s}{attr(0)}")
-                        # sys.exit(1) # Not sure if we should exit here...??
+                    try:
+                        # Perform GET
+                        search = r.get(
+                            URL, 
+                            headers=user_agent,
+                            verify=False
+                            )
+                        
+                        # Find out what's the response code
+                        if search.status_code == 404:
+                            print(f"{attr(1)}{fg(3)}[!]{attr(0)} Response {fg(1)}404{attr(0)} for - {fg(1)}{s}{attr(0)}")
 
-                except KeyboardInterrupt:
-                    print(f"{attr(1)}{fg(203)}[x]{attr(0)} Killing the script..\r\n")
-                    sys.exit(0)
-        
-        strings_file.close()
-        # print(f"Time taken to complete: {TimeMeasure.time_estimate('end') - begin} seconds")
+                        elif search.status_code == 200:
+                            URL = f"https://pastebin.com/raw/{s}"
+                            print(f"{attr(1)}{fg(2)}[+]{attr(0)} Response {fg(2)}200{attr(0)} for - {fg(6)}{s}{attr(0)}")
+                            print(f"- URL: {URL}")
+                        
+                        else:
+                            print(f"{attr(1)}{fg(1)}[-]{attr(0)} Response is different that 404 or 200 for - {fg(13)}{s}{attr(0)}")
+                            sys.exit(1) # Not sure if we should exit here...??
+
+                    except KeyboardInterrupt:
+                        raise Exception(f"{attr(1)}{fg(203)}[x]{attr(0)} Killing the script...\r\n")
+            
+                strings_file.close()
+                # print(f"Time taken to complete: {TimeMeasure.time_estimate('end') - begin} seconds")
+        except OSError:
+            raise Exception(f"{attr(1)}{fg(1)}[-]{attr(0)} Cannot read/open {fg(134)}strings.txt{attr(0)} !")
 
 '''
 The class is able to get the most recent archive from PasteBin.
@@ -235,11 +240,8 @@ class CheckBin:
                     
                     try:
                         os.mkdir("output")
-                    except:
-                        raise Exception()
-                        # print(f"{attr(1)}{fg(3)}[!]{attr(0)} Exception when making directory !")
-                        # print(f"{e}")
-
+                    except FileExistsError:
+                        raise Exception(f"{attr(1)}{fg(1)}[-]{attr(0)} Directory {fg(13)}output{attr(0)} exists !")
                 
                 with open(f"output/{string}.pastebin.txt", "w") as pastebin_entry:
                     pastebin_entry.write(search.text)
@@ -274,8 +276,6 @@ class CheckAllBin:
 
     def contents_of_pastes(id):
 
-        print(f"{attr(1)}{fg(2)}[+]{attr(0)} Grabbing most recent PasteBin archive !\r\n")
-
         ARCHIVE_URL = "https://pastebin.com/archive"
         RAW_URL = "https://pastebin.com/raw/"
         
@@ -306,21 +306,27 @@ class CheckAllBin:
             try:
                 os.mkdir('output/pastebins')
             except NotADirectoryError or FileExistsError:
-                raise Exception(f"\n{attr(1)}{fg(3)}[!]{attr(0)} Directory creation of {fg(13)}pastebins{attr(0)} failed !")
+                raise Exception(f"{attr(1)}{fg(3)}[-]{attr(0)} Directory creation of {fg(13)}pastebins{attr(0)} failed !")
 
-        for id in pastes_id:
-            URL_RAW = requests.get(f"{RAW_URL}{id}", 
-                                    verify=False,
-                                    headers=user_agent)
+        print(f"{attr(1)}{fg(2)}[+]{attr(0)} Grabbing most recent PasteBin archive !\r\n")
+        try:
+            for id in pastes_id:
+                URL_RAW = requests.get(f"{RAW_URL}{id}", 
+                                        verify=False,
+                                        headers=user_agent)
 
-            try:
-                with open(f"output/pastebins/Pastebin-{id}.txt", "w") as pastebin:
-                    print(f"{attr(1)}{fg(2)}[+]{attr(0)} Saving the contents of {fg(12)}{id}{attr(0)} to {fg(3)}output/pastebins/Pastebin-{id}.txt{attr(0)}")
-                    pastebin.write(URL_RAW.text)
+                try:
+                    with open(f"output/pastebins/Pastebin-{id}.txt", "w") as pastebin:
+                        print(f"{attr(1)}{fg(2)}[+]{attr(0)} Saving the contents of {fg(12)}{id}{attr(0)} to {fg(3)}output/pastebins/Pastebin-{id}.txt{attr(0)}")
+                        pastebin.write(URL_RAW.text)
+                        pastebin.close()
+                except OSError:
                     pastebin.close()
-            except:
-                raise Exception
-        
+                    raise Exception(f"{attr(1)}{fg(1)}[-]{attr(0)} Cannot read/open ./output/pastebins/Pastebin-{fg(134)}{id}{attr(0)} !")
+
+        except KeyboardInterrupt:
+            raise Exception(f"{attr(1)}{fg(203)}[x]{attr(0)} Killing the script...\r\n")
+
     def search_sensitive_data(f):
         
         # Some regex variables
@@ -329,14 +335,17 @@ class CheckAllBin:
         IP_REGEX = r"(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}"
 
         if not f:
-            try:
-                for file in os.listdir("./output/pastebins/"):
-                    # For each file check if it's a directory instead of file
-                    # If yes, exit
+            for file in os.listdir("./output/pastebins/"):
+                # For each file check if it's a directory instead of file
+                # If yes, exit
+                try:
                     if os.path.isdir(f"./output/pastebins/{file}"):
-                        print(f"[!] {file} is a directory not a file !")
+                        print(f"{attr(1)}{fg(1)}[-]{attr(0)} {fg(134)}{attr(1)}{file}{attr(0)} is a directory not a file !")
                         sys.exit(0)
+                except Exception as e:
+                    raise Exception(f"{attr(1)}{fg(1)}[-]{attr(0)} Something went wrong [{fg(187)}{e}{attr(0)}]")
 
+                try:
                     # Read each file and search for emails, usernames, IP addresses
                     with open(f"./output/pastebins/{file}", "r") as pastebin:
                         
@@ -359,37 +368,46 @@ class CheckAllBin:
                                 print(f"{username_search.group(0)}\r\n")
                         
                         pastebin.close()
-            except:
-                raise Exception()
+                except OSError:
+                    pastebin.close()
+                    raise Exception(f"{attr(1)}{fg(1)}[-]{attr(0)} Cannot read/open ./output/pastebins/{fg(134)}{file}{attr(0)} !")
+                    
         # Choose a file in ./output/ and check for sensitive info
         # using regex above
         else:
-            if os.path.isdir(f"./output/{f}"):
-                print(f"[!] {f} is a directory not a file !")
-                sys.exit(0)
+            try:
+                if os.path.isdir(f"./output/{f}"):
+                    print(f"{attr(1)}{fg(1)}[-]{attr(0)} {fg(134)}{attr(1)}{f}{attr(0)} is a directory not a file !")
+                    sys.exit(0)
+            except Exception as e:
+                raise Exception(f"{attr(1)}{fg(1)}[-]{attr(0)} Something went wrong [{fg(187)}{e}{attr(0)}]")
 
-            with open(f"./output/{f}", "r") as file_to_read:
+            try:
+                with open(f"./output/{f}", "r") as file_to_read:
 
-                print(f"{attr(1)}{fg(2)}[+]{attr(0)} Searching for sensitive info in {fg(3)}output/{f}{attr(0)}")
-                file = file_to_read.readlines()
+                    print(f"{attr(1)}{fg(2)}[+]{attr(0)} Searching for sensitive info in {fg(3)}output/{f}{attr(0)}")
+                    file = file_to_read.readlines()
 
-                for line in file:
-                    email_search = re.search(EMAIL_REGEX, str(line))
-                    if email_search:
-                        print(f"{attr(1)}{fg(2)}[+]{attr(0)} Found emails in {fg(3)}output/{f}{attr(0)}")
-                        print(f"{email_search.group(0)}\r\n")
-                    
-                    ip_search = re.search(IP_REGEX, str(line))
-                    if ip_search:
-                        print(f"{attr(1)}{fg(2)}[+]{attr(0)} Found IP addresses in {fg(3)}output/{f}{attr(0)}")
-                        print(f"{ip_search.group(0)}\r\n")
+                    for line in file:
+                        email_search = re.search(EMAIL_REGEX, str(line))
+                        if email_search:
+                            print(f"{attr(1)}{fg(2)}[+]{attr(0)} Found emails in {fg(3)}output/{f}{attr(0)}")
+                            print(f"{email_search.group(0)}\r\n")
+                        
+                        ip_search = re.search(IP_REGEX, str(line))
+                        if ip_search:
+                            print(f"{attr(1)}{fg(2)}[+]{attr(0)} Found IP addresses in {fg(3)}output/{f}{attr(0)}")
+                            print(f"{ip_search.group(0)}\r\n")
 
-                    username_search = re.search(USERNAME_REGEX, str(line))
-                    if username_search:
-                        print(f"{attr(1)}{fg(2)}[+]{attr(0)} Found username in {fg(3)}output/{f}{attr(0)}")
-                        print(f"{username_search.group(0)}\r\n")
+                        username_search = re.search(USERNAME_REGEX, str(line))
+                        if username_search:
+                            print(f"{attr(1)}{fg(2)}[+]{attr(0)} Found username in {fg(3)}output/{f}{attr(0)}")
+                            print(f"{username_search.group(0)}\r\n")
 
-                file_to_read.close()
+                    file_to_read.close()
+            except OSError:
+                raise Exception(f"{attr(1)}{fg(1)}[-]{attr(0)} Cannot read/open ./output/{fg(134)}{f}{attr(0)} !")
+
 
 '''
 The class is capable of going through all PasteBins of
@@ -433,7 +451,7 @@ class Pastebiner:
             try:
                 os.mkdir('output/users')
             except NotADirectoryError or FileExistsError:
-                raise Exception(f"\n{attr(1)}{fg(3)}[!]{attr(0)} Directory creation of {fg(13)}users{attr(0)} failed !")
+                raise Exception(f"{attr(1)}{fg(3)}[-]{attr(0)} Directory creation of {fg(13)}users{attr(0)} failed or already exists !")
 
         # Check if user exists in PasteBin
         if request_user.status_code == 404:
@@ -450,7 +468,7 @@ class Pastebiner:
                 try:
                     os.mkdir(f'output/users/{u}')
                 except NotADirectoryError or FileExistsError:
-                    raise Exception(f"\n{attr(1)}{fg(3)}[!]{attr(0)} Directory creation of user {fg(134)}{u}{attr(0)} failed !")
+                    raise Exception(f"{attr(1)}{fg(3)}[-]{attr(0)} Directory creation of user {fg(134)}{u}{attr(0)} failed or already exists !")
 
         print(f"{attr(1)}{fg(2)}[+]{attr(0)} Requesting page {fg(44)}{attr(1)}{p}{attr(0)}")
         try:
@@ -476,11 +494,11 @@ class Pastebiner:
                         print(f"{attr(1)}{fg(2)}[+]{attr(0)} Saving the contents of {fg(12)}{id}{attr(0)} to {fg(3)}output/users/{fg(134)}{u}{attr(0)}{fg(3)}/Pastebin-{id}.txt{attr(0)}")
                         pastebin.write(URL_RAW.text)
                         pastebin.close()
-                except:
-                    raise Exception()
+                except OSError:
+                    raise Exception(f"{attr(1)}{fg(1)}[-]{attr(0)} Cannot read/open ./output/users/{fg(134)}{u}{attr(0)}")
 
         except Exception as e:
-            print(e)
+            print(f"{attr(1)}{fg(1)}[-]{attr(0)} Exception hit: [{fg(189)}{e}{attr(0)}]")
 
 #Initilize parser for arguments
 def argparser():
