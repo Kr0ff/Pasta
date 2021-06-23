@@ -4,7 +4,6 @@ try:
     import requests
     import argparse
     import sys
-    import time
     import string
     import random
     import os
