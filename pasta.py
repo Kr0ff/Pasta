@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
 
-'''
-TODO:
-1. Implement somehow, good to look for usernames, passwords, emails, etc. (Anything of value) - DONE [v]
-2. Get the most recent 200 pastes from pastebin.com/archive - DONE [v] 
-3. Threading - DONE [x]
-4. Be able to get the contents of a user's page - DONE [v]
-'''
-
 try:
     import requests
     import argparse
@@ -17,7 +9,8 @@ try:
     import random
     import os
     import re
-    
+
+    from concurrent.futures import ThreadPoolExecutor
     from colored import fg, attr
     from bs4 import BeautifulSoup
 except ImportError as i:
@@ -25,32 +18,42 @@ except ImportError as i:
     print(f"{attr(1)}{fg(1)}[-]{attr(0)} Python error: {i}")
 
 # Disable insecure SSL warnings
-requests.packages.urllib3.disable_warnings()
+requests.urllib3.disable_warnings()
+
+def random_ascii():
+    files = os.listdir("./misc/art/")
+    random_ = random.choice(files)
+    try:
+        with open(f"./misc/art/{random_}", "r") as asciiart_:
+            return asciiart_.read()
+    except OSError:
+        raise Exception(f"{attr(1)}{fg(1)}[-]{attr(0)} Cannot read/open {fg(134)}{random_}{attr(0)} !")
 
 def ascii():
-    ascii_art = f"""{attr(1)}{fg(45)}   
-
- ______  ______   ______   ______  ______    
-/\  == \/\  __ \ /\  ___\ /\__  _\/\  __ \   
-\ \  _-/\ \  __ \\\ \___  \\\/_/\ \/\ \  __ \  
- \ \_\   \ \_\ \_\\\/\_____\  \ \_\ \ \_\ \_\ 
-  \/_/    \/_/\/_/ \/_____/   \/_/  \/_/\/_/{attr(0)}      
-                                       {fg(106)}v0.2{attr(0)}   
+    
+    art_ = random_ascii() 
+    printAscii_ = f"""{attr(1)}{fg(45)}
+    {art_}{attr(0)}      
+{fg(179)}ver: {attr(0)}{fg(106)}0.3{attr(0)}   
+    
     """
-    print(ascii_art)
-
-# This is likely not needed...
-class TimeMeasure:
-
-    def time_estimate(arg=''):
-        start = time.time()
-        end = time.time()
-
-        if arg == "start":
-            return start
-        
-        if arg == "end":
-            return end
+    print(printAscii_)
+    
+'''
+Class to provide threading to other functions
+'''
+class Threading:
+    
+    def __init__(self, prog, threads):
+        self.threads = threads
+        self.prog = prog
+    
+    def threadit(prog, threads):
+        try:
+            with ThreadPoolExecutor(max_workers=threads) as executer:
+                executer.submit(prog)
+        except Exception as e:
+            raise Exception(f"{attr(1)}{fg(1)}[-]{attr(0)} Exception hit: [{fg(189)}{e}{attr(0)}]")
 
 '''
 Class to search PasteBin with randomly generated
@@ -103,9 +106,7 @@ class Search:
         except OSError:
             raise Exception(f"{attr(1)}{fg(1)}[-]{attr(0)} Cannot read/open {fg(134)}strings.txt{attr(0)} !")
         
-    def search_request(str_range=0):
-
-        # begin = TimeMeasure.time_estimate("start")
+    def search_request(threads, str_range=0):
         
         if str_range != 0:
             Search.randomize_alpha(8, str_range)
@@ -114,10 +115,16 @@ class Search:
         user_agent = {
             "User-Agent" : "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1 Safari/605.1.15"
             }
+        URL = f"https://pastebin.com/"
         
         # Initiallise GET request
         r = requests.Session()
+        search = r.get(URL, 
+                headers=user_agent,
+                verify=False
+                )
 
+        print(f"{attr(1)}{fg(2)}[+]{attr(0)} Using {threads} threads !\r\n")
         print(f"{attr(1)}{fg(2)}[+]{attr(0)} Requesting the following IDs\r\n")
         # Check each string in the strings.txt file
         try:
@@ -125,15 +132,17 @@ class Search:
                 for string in strings_file:
                     
                     s = string.strip()
-                    URL = f"https://pastebin.com/{s}"
                     
                     try:
-                        # Perform GET
-                        search = r.get(
-                            URL, 
-                            headers=user_agent,
-                            verify=False
-                            )
+                        try:
+                            # Perform GET
+                            Threading.threadit(r.get(URL+s, 
+                                                     headers=user_agent,
+                                                     verify=False), 
+                                               threads)
+                        except Exception as e:
+                            print(f"{attr(1)}{fg(1)}[-]{attr(0)} Threading exception hit: [{fg(189)}{e}{attr(0)}]")
+                            sys.exit(0)
                         
                         # Find out what's the response code
                         if search.status_code == 404:
@@ -152,7 +161,7 @@ class Search:
                         raise Exception(f"{attr(1)}{fg(203)}[x]{attr(0)} Killing the script...\r\n")
             
                 strings_file.close()
-                # print(f"Time taken to complete: {TimeMeasure.time_estimate('end') - begin} seconds")
+                
         except OSError:
             raise Exception(f"{attr(1)}{fg(1)}[-]{attr(0)} Cannot read/open {fg(134)}strings.txt{attr(0)} !")
 
@@ -175,7 +184,10 @@ class CheckBin:
             "User-Agent" : "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1 Safari/605.1.15"
         }
 
-        ARCHIVE_URL = requests.get('https://pastebin.com/archive', verify=False, headers=user_agent)
+        ARCHIVE_URL = requests.get('https://pastebin.com/archive', 
+                                   verify=False, 
+                                   headers=user_agent)
+        
         soup = BeautifulSoup(ARCHIVE_URL.content, 'html.parser')
         pastes = soup.find_all('a')
 
@@ -273,8 +285,11 @@ The class can check for sensitive data such as emails, usernames & IP addresses
  - CheckAllBin.search_sensitive_data() 
 '''
 class CheckAllBin:
+    
+    def __init__(self, threads):
+        self.threads = threads
 
-    def contents_of_pastes(id):
+    def contents_of_pastes(id, threads):
 
         ARCHIVE_URL = "https://pastebin.com/archive"
         RAW_URL = "https://pastebin.com/raw/"
@@ -307,7 +322,8 @@ class CheckAllBin:
                 os.mkdir('output/pastebins')
             except NotADirectoryError or FileExistsError:
                 raise Exception(f"{attr(1)}{fg(3)}[-]{attr(0)} Directory creation of {fg(13)}pastebins{attr(0)} failed !")
-
+        
+        print(f"{attr(1)}{fg(2)}[+]{attr(0)} Using {threads} threads !")
         print(f"{attr(1)}{fg(2)}[+]{attr(0)} Grabbing most recent PasteBin archive !\r\n")
         try:
             for id in pastes_id:
@@ -318,8 +334,11 @@ class CheckAllBin:
                 try:
                     with open(f"output/pastebins/Pastebin-{id}.txt", "w") as pastebin:
                         print(f"{attr(1)}{fg(2)}[+]{attr(0)} Saving the contents of {fg(12)}{id}{attr(0)} to {fg(3)}output/pastebins/Pastebin-{id}.txt{attr(0)}")
-                        pastebin.write(URL_RAW.text)
-                        pastebin.close()
+                        try:
+                            Threading.threadit(pastebin.write(URL_RAW.text), threads)
+                            Threading.threadit(pastebin.close(), threads)
+                        except Exception as e:
+                            print(f"{attr(1)}{fg(1)}[-]{attr(0)} Threading exception hit: [{fg(189)}{e}{attr(0)}]")
                 except OSError:
                     pastebin.close()
                     raise Exception(f"{attr(1)}{fg(1)}[-]{attr(0)} Cannot read/open ./output/pastebins/Pastebin-{fg(134)}{id}{attr(0)} !")
@@ -419,7 +438,7 @@ a user and grabbing all PasteBins posted by that person
 # - desislava_topuzakova (long list)
 class Pastebiner:
 
-    def pastebiner(u, p):
+    def pastebiner(u, p, threads):
 
         RAW_URL = "https://pastebin.com/raw/"
         USER_URL = "https://pastebin.com/u/"
@@ -485,6 +504,7 @@ class Pastebiner:
             pastes_findall = re.findall(HREF_REGEX, str(pastes)) 
             pastes_id = re.findall(get_valid_id, str(pastes_findall))
 
+            print(f"{attr(1)}{fg(2)}[+]{attr(0)} Using {threads} threads !\r\n")
             for id in pastes_id:
                 URL_RAW = requests.get(f"{RAW_URL}{id}", 
                                     verify=False,
@@ -492,8 +512,12 @@ class Pastebiner:
                 try:
                     with open(f"output/users/{u}/Pastebin-{id}.txt", "w") as pastebin:
                         print(f"{attr(1)}{fg(2)}[+]{attr(0)} Saving the contents of {fg(12)}{id}{attr(0)} to {fg(3)}output/users/{fg(134)}{u}{attr(0)}{fg(3)}/Pastebin-{id}.txt{attr(0)}")
-                        pastebin.write(URL_RAW.text)
-                        pastebin.close()
+                        try:
+                            Threading.threadit(pastebin.write(URL_RAW.text), threads)
+                            Threading.threadit(pastebin.close(), threads)
+                        except Exception as e:
+                            print(f"{attr(1)}{fg(1)}[-]{attr(0)} Threading exception hit: [{fg(189)}{e}{attr(0)}]")
+                            sys.exit(0)
                 except OSError:
                     raise Exception(f"{attr(1)}{fg(1)}[-]{attr(0)} Cannot read/open ./output/users/{fg(134)}{u}{attr(0)}")
 
@@ -526,21 +550,21 @@ def argparser():
             required=False
             )
 
-    parser.add_argument("-ga", 
+    parser.add_argument("-g", 
             "--get_archive", 
             help="Get most recent PasteBin archive", 
             required=False,
             action='store_true'
             )
             
-    parser.add_argument("-sc", 
+    parser.add_argument("-d", 
             "--scrape", 
             help="Scrape the most recent archive and save each Pastebin", 
             required=False,
             action='store_true'
             )
     
-    parser.add_argument("-ss", 
+    parser.add_argument("-e", 
             "--sensitive", 
             help="Search for sensitive info from downloaded Pastebins", 
             required=False,
@@ -567,18 +591,30 @@ def argparser():
             required=False,
             type=str
             )
+    
+    parser.add_argument("-t",
+            "--threads",
+            help="How many threads to use",
+            required=False,
+            type=int
+            )
 
     #Show help menu if no arguments provided
     args = parser.parse_args(args=None if sys.argv[1:] else ['-h'])
     
     if args.search:
+        
+        if args.threads:
+            threads = args.threads
+        else:
+            threads = 5
+            
         if args.range_str:
             str_range = args.range_str
-            Search.search_request(str_range)
-        
         else:
             str_range = 0
-            Search.search_request(str_range)
+        
+        Search.search_request(threads, str_range)
 
     if args.range_str and not args.search:
         str_range = args.range_str
@@ -592,25 +628,43 @@ def argparser():
         CheckBin.get_recent_archive()
 
     if args.scrape:
-        CheckAllBin.contents_of_pastes(id)
+        
+        if args.threads:
+            threads = args.threads
+        else:
+            threads = 5
+            
+        CheckAllBin.contents_of_pastes(id, threads)
 
-    # These go together
+    # These go together ############################
     if args.sensitive and not args.file:
         f = None
         CheckAllBin.search_sensitive_data(f)
     if args.sensitive and args.file:
         CheckAllBin.search_sensitive_data(args.file)
+    ################################################
     
-    # These go together
+    # These go together ####################
     if args.userbin and not args.page:
         u = args.userbin
         p = 0
-        Pastebiner.pastebiner(u, p)
+        
+        if args.threads:
+            threads = args.threads
+        else:
+            threads = 5
+        Pastebiner.pastebiner(u, p, threads)
+        
     if args.userbin and args.page:
         u = args.userbin
         p = args.page
-        Pastebiner.pastebiner(u, p)
-
+        
+        if args.threads:
+            threads = args.threads
+        else:
+            threads = 5
+        Pastebiner.pastebiner(u, p, threads)
+    ########################################
 if __name__ == "__main__":
     ascii()
     argparser()
