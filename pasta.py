@@ -10,6 +10,7 @@ try:
     import re
 
     from concurrent.futures import ThreadPoolExecutor
+    from concurrent.futures.thread import BrokenThreadPool
     from colored import fg, attr
     from bs4 import BeautifulSoup
 except ImportError as i:
@@ -17,7 +18,7 @@ except ImportError as i:
     print(f"{attr(1)}{fg(1)}[-]{attr(0)} Python error: {i}")
 
 # Disable insecure SSL warnings
-requests.urllib3.disable_warnings()
+# requests.urllib3.disable_warnings()
 
 def random_ascii():
     files = os.listdir("./misc/art/")
@@ -83,16 +84,16 @@ class Search:
         # Check if strings.txt exists where random strings will be inserted
         if not os.path.isfile("./strings.txt") and not os.path.exists("./strings.txt"):
             
-            print(f"{attr(1)}{fg(129)}[?]{attr(0)} File 'strings.txt' doesn't exist !")
-            print(f"{attr(1)}{fg(4)}[*]{attr(0)} Making 'strings.txt' !")
+            print(f"{attr(1)}{fg(129)}[?]{attr(0)} File {fg(13)}strings.txt{attr(0)} doesn't exist !")
+            print(f"{attr(1)}{fg(4)}[*]{attr(0)} Making {fg(13)}strings.txt{attr(0)} !")
             
             strings_file = open("strings.txt", "w+")
             strings_file.close()
         
         else:
-            print(f"{attr(1)}{fg(2)}[+]{attr(0)} File 'strings.txt' exists !")
+            print(f"{attr(1)}{fg(2)}[+]{attr(0)} File {fg(13)}strings.txt{attr(0)} exists !")
 
-        print(f"{attr(1)}{fg(2)}[+]{attr(0)} Writing {str_range} strings in 'strings.txt' !")        
+        print(f"{attr(1)}{fg(2)}[+]{attr(0)} Writing {str_range} strings in {fg(13)}strings.txt{attr(0)} !")        
         try:
             with open("./strings.txt", "w") as strings_file:
                 for strings in range(str_range):
@@ -114,16 +115,16 @@ class Search:
         user_agent = {
             "User-Agent" : "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1 Safari/605.1.15"
             }
-        URL = f"https://pastebin.com/"
+        URL = "https://pastebin.com/raw/"
         
         # Initiallise GET request
         r = requests.Session()
         search = r.get(URL, 
                 headers=user_agent,
-                verify=False
+                # verify=False
                 )
 
-        print(f"{attr(1)}{fg(2)}[+]{attr(0)} Using {threads} threads !\r\n")
+        print(f"{attr(1)}{fg(2)}[+]{attr(0)} Using {threads} threads !")
         print(f"{attr(1)}{fg(2)}[+]{attr(0)} Requesting the following IDs\r\n")
         # Check each string in the strings.txt file
         try:
@@ -131,26 +132,26 @@ class Search:
                 for string in strings_file:
                     
                     s = string.strip()
-                    
+                    search = r.get(f"{URL}{s}", 
+                                    headers=user_agent,
+                                    # verify=False
+                                    )
+            
                     try:
                         try:
                             # Perform GET
-                            Threading.threadit(r.get(URL+s, 
-                                                     headers=user_agent,
-                                                     verify=False), 
+                            Threading.threadit(search, 
                                                threads)
-                        except Exception as e:
-                            print(f"{attr(1)}{fg(1)}[-]{attr(0)} Threading exception hit: [{fg(189)}{e}{attr(0)}]")
-                            sys.exit(0)
+                        except BrokenThreadPool:
+                            raise Exception(f"{attr(1)}{fg(1)}[-]{attr(0)} Threading exception hit !")
                         
                         # Find out what's the response code
                         if search.status_code == 404:
                             print(f"{attr(1)}{fg(3)}[!]{attr(0)} Response {fg(1)}404{attr(0)} for - {fg(1)}{s}{attr(0)}")
 
                         elif search.status_code == 200:
-                            URL = f"https://pastebin.com/raw/{s}"
                             print(f"{attr(1)}{fg(2)}[+]{attr(0)} Response {fg(2)}200{attr(0)} for - {fg(6)}{s}{attr(0)}")
-                            print(f"- URL: {URL}")
+                            print(f"- URL: {URL+s}\r\n")
                         
                         else:
                             print(f"{attr(1)}{fg(1)}[-]{attr(0)} Response is different that 404 or 200 for - {fg(13)}{s}{attr(0)}")
@@ -184,7 +185,7 @@ class CheckBin:
         }
 
         ARCHIVE_URL = requests.get('https://pastebin.com/archive', 
-                                   verify=False, 
+                                   # verify=False, 
                                    headers=user_agent)
         
         soup = BeautifulSoup(ARCHIVE_URL.content, 'html.parser')
@@ -239,7 +240,7 @@ class CheckBin:
             search = r.get(
                 RAW_URL, 
                 headers=user_agent,
-                verify=False
+                # verify=False
                 )
 
             # If the HTTP response is 200, write the contents of the PasteBin
@@ -300,7 +301,7 @@ class CheckAllBin:
         }
 
         URL_ARCHIVE = requests.get(ARCHIVE_URL, 
-                                    verify=False, 
+                                    # verify=False, 
                                     headers=user_agent)
 
         soup = BeautifulSoup(URL_ARCHIVE.content, 'html.parser')
@@ -310,7 +311,15 @@ class CheckAllBin:
         pastes_findall = re.findall(HREF_REGEX, str(pastes)) 
         pastes_id = re.findall(get_valid_id, str(pastes_findall))
 
-        # A for loop to check the contents of each ID.
+        if not os.path.isdir("output") and not os.path.exists("output"):
+            print(f"{attr(1)}{fg(129)}[?]{attr(0)} Folder {fg(13)}output{attr(0)} doesn't exist !")
+            print(f"{attr(1)}{fg(4)}[*]{attr(0)} Making folder {fg(13)}output{attr(0)} !")
+            
+            try:
+                os.mkdir("output")
+            except FileExistsError:
+                raise Exception(f"{attr(1)}{fg(1)}[-]{attr(0)} Directory {fg(13)}output{attr(0)} exists !")
+
         # Directory 'pastebins' will be created
         if os.path.exists('output/pastebins') and os.path.isdir('output/pastebins'):
             print(f"{attr(1)}{fg(2)}[+]{attr(0)} Directory {fg(13)}pastebins{attr(0)} exists !")
@@ -325,9 +334,10 @@ class CheckAllBin:
         print(f"{attr(1)}{fg(2)}[+]{attr(0)} Using {threads} threads !")
         print(f"{attr(1)}{fg(2)}[+]{attr(0)} Grabbing most recent PasteBin archive !\r\n")
         try:
+            # A for loop to check the contents of each ID.
             for id in pastes_id:
                 URL_RAW = requests.get(f"{RAW_URL}{id}", 
-                                        verify=False,
+                                        # verify=False,
                                         headers=user_agent)
 
                 try:
@@ -453,8 +463,8 @@ class Pastebiner:
         request_user = r.get(
             USER_URL+u,
             headers=user_agent,
-            verify=False
-        )
+            # verify=False
+            )
 
         # Is the user parameter empty ?
         if not u:
@@ -493,7 +503,7 @@ class Pastebiner:
             get_page = r.get(
                 f"{USER_URL}{u}/{p}",
                 headers=user_agent,
-                verify=False
+                # verify=False
             )
 
             soup = BeautifulSoup(get_page.content, 'html.parser')
@@ -506,7 +516,7 @@ class Pastebiner:
             print(f"{attr(1)}{fg(2)}[+]{attr(0)} Using {threads} threads !\r\n")
             for id in pastes_id:
                 URL_RAW = requests.get(f"{RAW_URL}{id}", 
-                                    verify=False,
+                                    # verify=False,
                                     headers=user_agent)
                 try:
                     with open(f"output/users/{u}/Pastebin-{id}.txt", "w") as pastebin:
