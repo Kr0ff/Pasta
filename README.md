@@ -5,9 +5,43 @@ It is not as powerful as the PastaBin scraping API but should suffice with provi
 
 # Features
 
+* Ability to generate random 8 characters long strings similar to those identifying real PasteBin entries
 
 
 
+* Ability to use the randomly generated strings and bruteforce PasteBin for possible hidden valid pastebins 
+
+```
+```
+
+* Ability to view the contents of PasteBin entry
+
+```
+```
+
+* Ability to scrape the most recent archive of PasteBin
+
+```
+```
+
+* Ability to look for sensitive information in downloaded pastebins [emails, usernames, IP addresses]
+
+```
+```
+
+* Ability to retrieve all pastebins of user's account from all available pages
+
+```
+```
+
+* Ability to select which file to search for sensitive information
+
+```
+```
+* Ability to select how many threads you want to use [-s, -d, -u] 
+
+```
+```
 
 # Installation
 
