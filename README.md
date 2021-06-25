@@ -3,35 +3,41 @@ Pasta is a python 3 tool which performs PasteBin scraping without the use of Pas
 
 It is not as powerful as the PastaBin scraping API but should suffice with providing enough information to look for usernames, passwords, emails, IP addresses and maybe more.
 
+[![license](https://img.shields.io/github/license/Kr0ff/Pasta)](https://opensource.org/licenses/MIT)
+[![contributions](https://img.shields.io/badge/contribution-welcome-green)](https://github.com/Kr0ff/PenDock/issues)
+![last commit](https://img.shields.io/github/last-commit/Kr0ff/Pasta?color=yellow&logo=Github)
+[![twitter](https://img.shields.io/twitter/follow/CptXrat?style=social)](https://twitter.com/CptXrat)
+[![github](https://img.shields.io/github/followers/Kr0ff?style=social)](https://github.com/Kr0ff)
+
 # Features
 
 * Ability to generate random 8 characters long strings similar to those identifying real PasteBin entries
 
-![strrange](examples/strrange.png)
+<img src="examples/strrange.png" alt="strrange" width="600"/>
 
 * Ability to use the randomly generated strings and bruteforce PasteBin for possible hidden valid pastebins 
 
-![search](examples/search.png)
+<img src="examples/search.png" alt="search" width="600"/>
 
 * Ability to view the contents of PasteBin entry
 
-![check](examples/check.png)
+<img src="examples/check.png" alt="check" width="600"/>
 
 * Ability to scrape the most recent archive of PasteBin
 
-![scrape](examples/scrape.png)
+<img src="examples/scrape.png" alt="scrape" width="600"/>
 
 * Ability to look for sensitive information in downloaded pastebins [emails, usernames, IP addresses]
 
-![sensitive](examples/sensitive.png)
+<img src="examples/sensitive.png" alt="sensitive" width="600"/>
 
 * Ability to retrieve all pastebins of user's account from all available pages
 
-![userpage](examples/userpage.png)
+<img src="examples/userpage.png" alt="userpage" width="600"/>
 
 * Ability to select which file to search for sensitive information
 
-![file](examples/file.png)
+<img src="examples/file.png" alt="file" width="600"/>
 
 * Ability to select how many threads you want to use [-s, -d, -u] 
 
@@ -81,3 +87,5 @@ optional arguments:
                         How many threads to use
 ```
 
+# Liability
+This script has been created for academic purposes only and takes no responsibility of its use !
