@@ -7,41 +7,33 @@ It is not as powerful as the PastaBin scraping API but should suffice with provi
 
 * Ability to generate random 8 characters long strings similar to those identifying real PasteBin entries
 
-
+![strrange](examples/strrange.png)
 
 * Ability to use the randomly generated strings and bruteforce PasteBin for possible hidden valid pastebins 
 
-```
-```
+![search](examples/search.png)
 
 * Ability to view the contents of PasteBin entry
 
-```
-```
+![check](examples/check.png)
 
 * Ability to scrape the most recent archive of PasteBin
 
-```
-```
+![scrape](examples/scrape.png)
 
 * Ability to look for sensitive information in downloaded pastebins [emails, usernames, IP addresses]
 
-```
-```
+![sensitive](examples/sensitive.png)
 
 * Ability to retrieve all pastebins of user's account from all available pages
 
-```
-```
+![userpage](examples/userpage.png)
 
 * Ability to select which file to search for sensitive information
 
-```
-```
-* Ability to select how many threads you want to use [-s, -d, -u] 
+![file](examples/file.png)
 
-```
-```
+* Ability to select how many threads you want to use [-s, -d, -u] 
 
 # Installation
 
@@ -88,3 +80,4 @@ optional arguments:
   -t THREADS, --threads THREADS
                         How many threads to use
 ```
+
