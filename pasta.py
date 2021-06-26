@@ -176,48 +176,93 @@ The class is able to check the contents of a user-provided ID.
 '''
 class CheckBin:
 
-    def get_recent_archive():
+    def __init__(self, archive):
+        self.archive = archive
 
-        # Set some variables
-        HREF_REGEX = r"<a href=\"\/(.*?)\">(.*?)<\/a>"
-        user_agent = {
-            "User-Agent" : "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1 Safari/605.1.15"
-        }
-
-        ARCHIVE_URL = requests.get('https://pastebin.com/archive', 
-                                   # verify=False, 
-                                   headers=user_agent)
+    def get_recent_archive(archive):
         
-        soup = BeautifulSoup(ARCHIVE_URL.content, 'html.parser')
-        pastes = soup.find_all('a')
+        
+        if not archive: 
 
-        # prints the necessary values using the HREF_REGEX above
-        pastes_findall = re.findall(HREF_REGEX, str(pastes))
+            # Set some variables
+            HREF_REGEX = r"<a href=\"\/(.*?)\">(.*?)<\/a>"
+            user_agent = {
+                "User-Agent" : "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1 Safari/605.1.15"
+            }
 
-        print(f"{attr(1)}{fg(2)}[+]{attr(0)} Grabbing most recent PasteBin archive !\r\n")
+            ARCHIVE_URL = requests.get('https://pastebin.com/archive', 
+                                    # verify=False, 
+                                    headers=user_agent)
+            
+            soup = BeautifulSoup(ARCHIVE_URL.content, 'html.parser')
+            pastes = soup.find_all('a')
 
-        # Will grab only the title and id of each PasteBin in the recent archive
-        try:
-            # id = PasteBin ID - KHK2ndnC
-            # t = PasteBin Title associated to the ID
-            for id, t in pastes_findall:
+            # prints the necessary values using the HREF_REGEX above
+            pastes_findall = re.findall(HREF_REGEX, str(pastes))
 
-                output = f"{t} -> {id}"
-                get_valid = r'(.*?) \-\> ([A-Za-z\d+]{8})'
-                final = re.search(get_valid, output)
-                
-                # Will check if the object type is NoneType
-                # and will skip that object
-                if final is None:
-                    pass
+            print(f"{attr(1)}{fg(2)}[+]{attr(0)} Grabbing most recent PasteBin archive !\r\n")
 
-                else:
-                    final = final.group(0)
-                    print(f"{fg(186)}{attr(1)}{final}{attr(0)}")
+            # Will grab only the title and id of each PasteBin in the recent archive
+            try:
+                # id = PasteBin ID - KHK2ndnC
+                # t = PasteBin Title associated to the ID
+                for id, t in pastes_findall:
 
-        # Again, if there's an IndexError it's skipped
-        except IndexError:
-            pass
+                    output = f"{t} -> {id}"
+                    get_valid = r'(.*?) \-\> ([A-Za-z\d+]{8})'
+                    final = re.search(get_valid, output)
+                    
+                    # Will check if the object type is NoneType
+                    # and will skip that object
+                    if final is None:
+                        pass
+
+                    else:
+                        final = final.group(0)
+                        print(f"{fg(186)}{attr(1)}{final}{attr(0)}")
+
+            # Again, if there's an IndexError it's skipped
+            except IndexError:
+                pass
+            
+        elif archive:
+            
+            ARCHIVE_URL = "https://pastebin.com/archive/"
+            HREF_REGEX = r"<a href=\"\/(.*?)\">(.*?)<\/a>"
+            user_agent = {
+                "User-Agent" : "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1 Safari/605.1.15"
+            }
+            
+            URL_REQUEST = requests.get(f'{ARCHIVE_URL}{archive}', 
+                                    # verify=False, 
+                                    headers=user_agent)
+            
+            print(f"{ARCHIVE_URL}{archive}")
+            
+            soup = BeautifulSoup(URL_REQUEST.content, 'html.parser')
+            pastes = soup.find_all('a')
+
+            # prints the necessary values using the HREF_REGEX above
+            pastes_findall = re.findall(HREF_REGEX, str(pastes))
+            # print(pastes_findall)
+
+            print(f"{attr(1)}{fg(2)}[+]{attr(0)} Grabbing most recent PasteBin archive of {fg(166)}{archive}{attr(0)}\r\n")
+            
+            try:
+                for id, t in pastes_findall:
+                    
+                    output = f"{t} -> {id}"
+                    get_valid = r'(.*?) \-\> ([A-Za-z\d+]{8})'
+                    final = re.search(get_valid, output)
+                    
+                    if final is None:
+                        pass
+                    
+                    else:
+                        final = final.group(0)
+                        print(f"{fg(186)}{attr(1)}{final}{attr(0)}")
+            except IndexError:
+                pass
     
     def view_pastebin(string):
         
@@ -633,11 +678,13 @@ def argparser():
         string = args.check
         CheckBin.view_pastebin(string)
     
-    if args.get_archive:
-        CheckBin.get_recent_archive()
+    if args.get_archive is not None:
+        archive = args.get_archive
+        CheckBin.get_recent_archive(archive)
+    else:
+        CheckBin.get_recent_archive(None)
 
     if args.scrape:
-        
         if args.threads:
             threads = args.threads
         else:
