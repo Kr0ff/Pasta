@@ -237,14 +237,11 @@ class CheckBin:
                                     # verify=False, 
                                     headers=user_agent)
             
-            print(f"{ARCHIVE_URL}{archive}")
-            
             soup = BeautifulSoup(URL_REQUEST.content, 'html.parser')
             pastes = soup.find_all('a')
 
             # prints the necessary values using the HREF_REGEX above
             pastes_findall = re.findall(HREF_REGEX, str(pastes))
-            # print(pastes_findall)
 
             print(f"{attr(1)}{fg(2)}[+]{attr(0)} Grabbing most recent PasteBin archive of {fg(166)}{archive}{attr(0)}\r\n")
             
