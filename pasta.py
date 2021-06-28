@@ -77,8 +77,9 @@ class Search:
 
         alpha = string.ascii_letters + string.digits
 
-        if str_range != 0:
-            Search.randomize_alpha(8, str_range)
+        if str_range == '0':
+            print(f"{attr(1)}{fg(1)}[-]{attr(0)} Number of strings can't be - {fg(13)}0{attr(0)}")
+            sys.exit(1)
 
         elif str_range == 0:
             print(f"{attr(1)}{fg(1)}[-]{attr(0)} No strings to use to search PasteBin !")
@@ -118,6 +119,15 @@ class Search:
         
         if str_range != 0:
             Search.randomize_alpha(8, str_range)
+
+        elif str_range == 0:
+            print(f"{attr(1)}{fg(1)}[-]{attr(0)} No strings to use to search PasteBin !")
+            print(f"{attr(1)}{fg(4)}[*]{attr(0)} Generating {fg(119)}100{attr(0)} to use...")
+            Search.randomize_alpha(8, 100)
+
+        else:
+            print(f"{attr(1)}{fg(1)}[-]{attr(0)} Something went wrong with generating strings to search PasteBin !")
+            sys.exit(1)
 
         # Safari cuz why not look fancy :P
         user_agent = {
