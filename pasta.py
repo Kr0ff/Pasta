@@ -718,6 +718,26 @@ def argparser():
             threads = 5
         Pastebiner.pastebiner(u, p, threads)
     ########################################
+    
+    # Checks for parameters used alone which shouldn't be
+    # -p parameter (user page)
+    if args.page:
+        print(f"{attr(1)}{fg(4)}[*]{attr(0)} Parameter {fg(155)}-p{attr(0)} cannot be used alone !")
+        print("Usage in combination with: \r\n")
+        print("-u/--userbin USER - Retrieve the PasteBin posts of a user")
+        # print("-t/--threads THREADS - How many threads to use")
+        sys.exit(0)
+    
+    # -t threads
+    if args.threads:
+        print(f"{attr(1)}{fg(4)}[*]{attr(0)} Parameter {fg(155)}-t{attr(0)} cannot be used alone !")
+        print("Usage in combination with: \r\n")
+        print("-u/--userbin USER - Retrieve the PasteBin posts of a user")
+        # print("-t/--threads THREADS - How many threads to use")
+        print("-d/--scrape - Scrape the most recent archive and save each Pastebin")
+        print("-s/--search - Search PasteBin with a set of strings")
+        sys.exit(0)
+        
 if __name__ == "__main__":
     ascii()
     argparser()
