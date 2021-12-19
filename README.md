@@ -88,4 +88,4 @@ optional arguments:
 ```
 
 # Liability
-This script has been created for academic purposes only and takes no responsibility of its use !
+This script has been created for academic purposes only and the developer takes no responsibility of its use !
