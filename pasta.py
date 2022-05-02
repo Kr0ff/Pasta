@@ -198,7 +198,7 @@ class CheckBin:
 
     def get_recent_archive(archive):
 
-        if archive:
+        if not archive:
 
             # Set some variables
             HREF_REGEX = r"<a href=\"\/(.*?)\">(.*?)<\/a>"
